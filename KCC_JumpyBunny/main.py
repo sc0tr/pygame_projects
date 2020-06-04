@@ -1,6 +1,8 @@
 # Jumpy Platformer
 #
 
+
+
 # File I/O  saving a high score
 
 import pygame as pg
@@ -53,31 +55,19 @@ class Game:
     def new(self):
         # start game play
         """
-        In this video he discusses an easier way to handle the groups
-        instead of adding the sprites to the group as a separate command 
-        each time a sprite is spawned, we can add the sprite when it is
-        initiated
-        so -- in the Pow class states -- he makes a list called groups 
-        and assigns it the values of all_sprites and powerups:
-            self.groups = game.all_sprites, game.powerups
-
-        Then you can delete the lines that assign variables to the GROUPS
-        bc they get assigned TO THE GROUPS in the class
-        I commented out the lines below so you can see
+        create the mobs group, and set a mob timer to 0
         """
         self.score = 0
-        self.all_sprites = pg.sprite.Group()
+        self.all_sprites = pg.sprite.LayeredUpdates()
         self.platforms = pg.sprite.Group()
         self.powerups = pg.sprite.Group()
         self.player = Player(self)
+        self.mobs = pg.sprite.Group()
         # self.all_sprites.add(self.player)
         for plat in PLATFORM_LIST:
             Platform(self, *plat)  # exploding the list
-            # and you erase the p = in: p = Platform(self, *plat)  
-
-            # self.all_sprites.add(p)
-            # self.platforms.add(p)
-            pg.mixer.music.load(path.join(self.snd_dir,'happytune.ogg'))
+        self.mob_timer = 0
+        pg.mixer.music.load(path.join(self.snd_dir,'happytune.ogg'))
         self.run()
 
 
@@ -152,6 +142,40 @@ class Game:
         # screen and sprite animation updates
         self.all_sprites.update()
         
+        """
+        Here we spawn mobs according to the mob timer
+        by defining 'now' and assigning it to get_ticks()
+        that way if the timer passes 5000 a new mob will spawn
+        but in order to randomize the interval use random.choice in 500ms
+
+        then in the 'if player reaches top 1/4 of screen' section
+        we added a loop to collect all mobs and set their y + the 
+        max of either the absolute value of the player velocity or 2
+
+        finally we updated the draw order in the draw function using 
+        a new type of group called layeredupdates in the new function
+        LayeredUpdates() allows you to assign an order value to each 
+        of your sprites 
+
+        Created constant vars in the settings.py for layer order
+        putting the player and mobs on the same layer (2) and the
+        plats and the pows on the same layer (1)
+
+        next you don't need the screen.blit for player image any more
+        due to the LayeredUpdates() in the draw function
+        instead the all_sprites group will handle all the layers
+        """
+        # Spawn a mob?
+        now = pg.time.get_ticks()
+        if now - self.mob_timer > 5000 + random.choice([-1000, -500, 0, 500, 1000]):
+            self.mob_timer = now
+            Mob(self)
+
+        #hit mobs?
+        mob_hits = pg.sprite.spritecollide(self.player, self.mobs, False, pg.sprite.collide_mask)
+        if mob_hits:
+            self.playing = False
+
         # check if player hits platform (only if falling)
         if self.player.vel.y > 0:
             hits = pg.sprite.spritecollide(self.player, self.platforms, False)
@@ -171,6 +195,8 @@ class Game:
         if self.player.rect.top <= HEIGHT / 4:
             # screen "follows player" (velocity slows down)
             self.player.pos.y += max(abs(self.player.vel.y), 2)  # absoluteVal
+            for mob in self.mobs:
+                mob.rect.y += max(abs(self.player.vel.y), 2)
             for plat in self.platforms:
                 plat.rect.y += max(abs(self.player.vel.y), 2)
                 if plat.rect.top >= HEIGHT:
@@ -208,7 +234,6 @@ class Game:
         # 
         self.screen.fill(BG_COLOR)
         self.all_sprites.draw(self.screen)
-        self.screen.blit(self.player.image, self.player.rect)
         self.draw_text(str(self.score), 22, (255,255,255), WIDTH / 2, 15)
         pg.display.flip()
 
