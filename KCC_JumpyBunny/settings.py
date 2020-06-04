@@ -32,13 +32,19 @@ PLAYER_ACC = 3
 PLAYER_FRICTION = -0.325
 PLAYER_GRAV = 0.75
 PLAYER_JUMP = 22
-# PLAYER_STANDING = [(614, 1063, 120, 191), (690, 406, 120, 201)]
-# PLAYER_WALK_R = [(678, 860, 120, 201), (692, 1458, 120, 207)]
-# PLAYER_JUMP_IMG = [(382, 763, 150, 181)]
 
 # Game Properties
 BOOST_POWER = 60  # How fast powerup moves player upward
 POW_SPAWN_PCT = 7  # How often pow spawms How likely a platform will have Pow when spawm
+MOB_FREQ = 5000  # frequency of mob spawns set to 5000 ms (5s)
+
+"""
+ADDED NEW VARS FOR LAYER UPDATE ORDER
+"""
+PLAYER_LAYER = 2
+PLAT_LAYER = 1
+POW_LAYER = 1
+MOB_LAYER = 2
 
 # Define colors
 BLACK = (0,0,0)
