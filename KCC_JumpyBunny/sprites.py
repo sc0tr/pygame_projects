@@ -13,6 +13,17 @@
 # part 9 adding spritesheet and updating img
 # part 10 adding animations!!
 # part 12 adding graphics to the platforms
+"""
+Part 17 is about creating collision masks for pixel perfect collisions
+Chris describes the difference between rectangular, circular and pixelPerfect
+collision masks.
+you create a mask within a sprite class using 
+self.mask = pg.mask.from_surface(self.image)  
+# add this at the end of the animate() or Update() Fx to match the current_frame
+then in collision use add (pg.sprite.collide_mask) to the arguments in 
+the hits sections
+
+"""
 
 import pygame as pg
 from random import choice, randrange
@@ -39,6 +50,7 @@ class Spritesheet:
 
 class Player(pg.sprite.Sprite):
 	def __init__(self, game):
+		self._layer = PLAYER_LAYER
 		self.groups = game.all_sprites
 		pg.sprite.Sprite.__init__(self, self.groups)
 		self.game = game
@@ -165,10 +177,13 @@ class Player(pg.sprite.Sprite):
 				self.rect = self.image.get_rect()
 				# gets new bottom for the new frame
 				self.rect.bottom = bottom
+		self.mask = pg.mask.from_surface(self.image)  
+
 
 class Platform(pg.sprite.Sprite):
 
 	def __init__(self, game, x, y):
+		self._layer = PLAT_LAYER
 		self.groups = game.all_sprites, game.platforms
 		pg.sprite.Sprite.__init__(self, self.groups)
 		self.game = game
@@ -185,10 +200,7 @@ class Platform(pg.sprite.Sprite):
 
 class Pow(pg.sprite.Sprite):
 	def __init__(self, game, plat):
-		"""
-		an new 'groups' variable is made with all the groups of the game
-		so for each group you wish to assign your class to you add it like below
-		"""
+		self._layer = POW_LAYER
 		self.groups = game.all_sprites, game.powerups
 		pg.sprite.Sprite.__init__(self, self.groups)
 		self.game = game
@@ -201,11 +213,55 @@ class Pow(pg.sprite.Sprite):
 		self.rect.bottom = self.plat.rect.top - 5  #hovers just above plat top
 
 	def update(self):
-		"""the bottom of the powerup rect is the top of the 
-		plat rect it's tied to - 5 px in the y direction (UP)
-		if the platforms group no longer has the plat then the 
-		powerup will be killed too
-		"""
 		self.rect.bottom = self.plat.rect.top - 5
 		if not self.game.platforms.has(self.plat):
+			self.kill()
+
+class Mob(pg.sprite.Sprite):
+	"""
+	This video is all about adding enemies and making them move.
+	New info: randomizing mob spawn & setting movement direction based
+	on the side of the screen. using a 
+	adding an enemy and animation for the little yellow helicopter sprite
+	'flyman'
+	"""
+	def __init__(self, game):
+		self._layer = MOB_LAYER
+		self.groups = game.all_sprites, game.mobs
+		pg.sprite.Sprite.__init__(self, self.groups)
+		self.game = game
+		self.image_up = self.game.spritesheet.get_img(566, 510, 122, 139)
+		self.image_up.set_colorkey(BLACK)
+		self.image_down = self.game.spritesheet.get_img(568, 1534, 122, 135)
+		self.image_down.set_colorkey(BLACK)
+		self.image = self.image_up
+		self.rect = self.image.get_rect()
+		# have them somestimes spawn on left, and sometimes on right
+		# start off screen
+		self.rect.centerx = choice([-100, WIDTH + 100])
+		self.vx = randrange(1, 4)  # positive x change speed 
+		if self.rect.centerx > WIDTH:
+			self.vx *= -1  # if spawns off screen right, changes x to negative
+		self.rect.y = randrange(HEIGHT / 2)
+		self.vy = 0  # velocity on y axis
+		self.dy = 0.5  # amount of y acceleration for y movement
+
+	def update(self):
+		self.rect.x += self.vx  # increments x change
+		self.vy += self.dy
+		if self.vy > choice([1,2,3]) or self.vy < choice([-3,-2,-1]):  # boundary of 6 pixels
+			self.dy *= -1  # changes y direction 
+		if self.rect.top <= 0:  # keeps mobs from going off top screen
+			self.dy = 0.5
+		# decide which image to use (based on direction)
+		center = self.rect.center
+		if self.dy < 0:  # if neg Y up image
+			self.image = self.image_up
+		else:
+			self.image = self.image_down
+		self.rect = self.image.get_rect()
+		self.mask = pg.mask.from_surface(self.image)
+		self.rect.center = center
+		self.rect.y += self.vy
+		if self.rect.left > WIDTH +100 or self.rect.right < - 100:
 			self.kill()
